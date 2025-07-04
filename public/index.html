@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Estación</title>
+  <style>
+    body { margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: Arial, sans-serif; background: green; color: black; }
+    #mensaje { font-size: 2em; margin-bottom: 20px; }
+    #botones { margin-top: 20px; display: flex; gap: 20px; }
+    button { padding: 20px 40px; font-size: 1em; border-radius: 10px; border: none; cursor: pointer; }
+    #rojo { background: crimson; color: white; }
+    #amarillo { background: gold; color: black; }
+    #verde { background: #3c3; color: white; }
+    select { font-size: 1em; padding: 8px; }
+  </style>
+</head>
+<body>
+  <div id="mensaje">Selecciona tu estación:</div>
+  <select id="estacion">
+    <option value="">-- Elegir opción --</option>
+    <option value="1">Estación 1</option>
+    <option value="2">Estación 2</option>
+    <option value="3">Estación 3</option>
+    <option value="4">Estación 4</option>
+    <option value="5">Estación 5</option>
+    <option value="6">Estación 6</option>
+    <option value="7">Estación 7</option>
+    <option value="8">Estación 8</option>
+    <option value="supervisor">Supervisor</option>
+  </select>
+  <div id="botones" style="display:none">
+    <button id="rojo">Alerta Roja</button>
+    <button id="amarillo">Alerta Amarilla</button>
+    <button id="verde">Volver a Verde</button>
+  </div>
+  <audio id="alarma" src="alarma.wav" preload="auto"></audio>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let miEstacion = null;
+    let soySupervisor = false;
+    let rojas = [], amarillas = [];
+    const socket = io();
+
+    const mensaje = document.getElementById("mensaje");
+    const sel = document.getElementById("estacion");
+    const botones = document.getElementById("botones");
+    const btnRojo = document.getElementById("rojo");
+    const btnAmarillo = document.getElementById("amarillo");
+    const btnVerde = document.getElementById("verde");
+    const alarma = document.getElementById("alarma");
+
+    sel.addEventListener("change", () => {
+      miEstacion = sel.value;
+      soySupervisor = (miEstacion === "supervisor");
+      socket.emit("registrar", miEstacion);
+      sel.style.display = "none";
+      if (!soySupervisor) botones.style.display = "flex";
+      else botones.style.display = "none";
+      mensaje.innerText = soySupervisor ? "Supervisor" : "Estación " + miEstacion;
+    });
+
+    btnRojo.onclick = () => socket.emit("activarRojo");
+    btnAmarillo.onclick = () => socket.emit("activarAmarillo");
+    btnVerde.onclick = () => {
+      if (rojas.includes(miEstacion)) {
+        socket.emit("desactivarRojo");
+      } else if (amarillas.includes(miEstacion)) {
+        socket.emit("desactivarAmarillo");
+      }
+    };
+
+    socket.on("estado", (estado) => {
+      rojas = estado.rojas || [];
+      amarillas = estado.amarillas || [];
+      // Prioridad: rojo > amarillo > verde
+      if (rojas.length > 0) {
+        document.body.style.background = "red";
+        mensaje.innerHTML = rojas.map(e => `🚨 Estación en problema: ${e}`).join("<br>");
+      } else if (amarillas.length > 0) {
+        document.body.style.background = "yellow";
+        mensaje.innerHTML = amarillas.map(e => `⚠️ Alerta estación: ${e}`).join("<br>");
+      } else {
+        document.body.style.background = "green";
+        mensaje.innerText = soySupervisor ? "Supervisor" : (miEstacion ? `Estación ${miEstacion}` : "Selecciona tu estación:");
+      }
+      // Sonido solo si YO tengo rojo activo
+      if (miEstacion && rojas.includes(miEstacion) && !soySupervisor) {
+        alarma.loop = true; alarma.play().catch(() => {});
+      } else {
+        alarma.pause(); alarma.currentTime = 0;
+      }
+      btnRojo.innerText = rojas.includes(miEstacion) ? "Alerta Roja Activa" : "Alerta Roja";
+      btnVerde.style.display = (rojas.includes(miEstacion) || amarillas.includes(miEstacion)) ? "" : "none";
+      btnVerde.innerText = rojas.includes(miEstacion)
+        ? "Quitar Alerta Roja"
+        : (amarillas.includes(miEstacion) ? "Quitar Alerta Amarilla" : "Volver a Verde");
+      btnAmarillo.innerText = amarillas.includes(miEstacion) ? "Alerta Amarilla Activa" : "Alerta Amarilla";
+      btnAmarillo.disabled = rojas.includes(miEstacion);
+      if (soySupervisor) botones.style.display = "none";
+    });
+  </script>
+</body>
+</html>
