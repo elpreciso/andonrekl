@@ -1,13 +1,14 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Sirve archivos estáticos desde la raíz del proyecto
-app.use(express.static(__dirname));
+// Servir archivos estáticos desde la raíz
+app.use(express.static(path.join(__dirname)));
 
 let users = {}; // socket.id -> {estacion: string, tipo: "supervisor"|"estacion"}
 let rojas = new Set(); // estaciones en alerta roja
@@ -45,7 +46,7 @@ io.on("connection", (socket) => {
 
   socket.on("desactivarRojo", () => {
     if (tipo !== "estacion" || !estacion) return;
-    rojas.delete(estacion); // <-- Solo quita la estación de la alerta roja
+    rojas.delete(estacion);
     emitirEstado();
   });
 
@@ -71,7 +72,5 @@ io.on("connection", (socket) => {
   });
 });
 
-// Escucha en todas las interfaces de red
-server.listen(3000, '0.0.0.0', () => {
-  console.log("Servidor disponible en http://localhost:3000");
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
