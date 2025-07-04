@@ -1,14 +1,12 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Servir archivos estáticos desde la raíz
-app.use(express.static(path.join(__dirname)));
+app.use(express.static("."));
 
 let users = {}; // socket.id -> {estacion: string, tipo: "supervisor"|"estacion"}
 let rojas = new Set(); // estaciones en alerta roja
