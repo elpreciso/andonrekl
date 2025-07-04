@@ -1,12 +1,14 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static("public"));
+// Aquí busca los archivos estáticos en la raíz del proyecto
+app.use(express.static(__dirname));
 
 let users = {}; // socket.id -> {estacion: string, tipo: "supervisor"|"estacion"}
 let rojas = new Set(); // estaciones en alerta roja
@@ -44,7 +46,7 @@ io.on("connection", (socket) => {
 
   socket.on("desactivarRojo", () => {
     if (tipo !== "estacion" || !estacion) return;
-    rojas.delete(estacion); // <-- Solo quita la estación de la alerta roja
+    rojas.delete(estacion);
     emitirEstado();
   });
 
@@ -70,5 +72,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => console.log("Servidor en http://localhost:3000"));
-
+// Usa el puerto dado por la plataforma (importante para Railway)
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
