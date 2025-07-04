@@ -1,13 +1,12 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Aquí busca los archivos estáticos en la raíz del proyecto
+// Cambia esto: sirve archivos estáticos desde la RAÍZ del proyecto
 app.use(express.static(__dirname));
 
 let users = {}; // socket.id -> {estacion: string, tipo: "supervisor"|"estacion"}
@@ -72,6 +71,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Usa el puerto dado por la plataforma (importante para Railway)
+// PUERTO CORRECTO PARA RAILWAY y otras plataformas
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
